@@ -82,9 +82,45 @@ symbolTable | JSONB.SymbolTable | JSONB序列化和反序列化的符号表，�
 
 ## 2. 配置FastJsonHttpMessageConverter
 
+### 2.1 Spring MVC 7.0 及以上版本
+
+从 Spring MVC 7.0 开始，`configureMessageConverters(List<HttpMessageConverter<?>>)` 方法已被弃用，改为使用新的 `HttpMessageConverters.ServerBuilder` 方式进行配置。
+
 ```java
 @Configuration
-public class WebMvcConfigurer extends WebMvcConfigurationSupport {
+public class FastJsonWebMvcConfiguration extends WebMvcConfigurationSupport {
+
+    @Override
+    protected void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
+        FastJsonHttpMessageConverter converter = new FastJsonHttpMessageConverter();
+        FastJsonConfig config = new FastJsonConfig();
+        config.setDateFormat("yyyy-MM-dd HH:mm:ss");
+        config.setCharset(StandardCharsets.UTF_8);
+
+        converter.setFastJsonConfig(config);
+        // 从2.0.60版本开始，FastJsonHttpMessageConverter默认charset已经是UTF-8，无需手动设置
+        // converter.setDefaultCharset(StandardCharsets.UTF_8);
+
+        // 使用 withJsonConverter 方法替换默认的 JSON 转换器
+        builder.withJsonConverter(converter);
+    }
+}
+```
+
+**注意**：Spring MVC 7.0 的 `HttpMessageConverters.ServerBuilder` 提供了不同的方法来配置不同类型的消息转换器：
+- `withJsonConverter()` - 用于配置 JSON 转换器
+- `withXmlConverter()` - 用于配置 XML 转换器
+- `withStringConverter()` - 用于配置字符串转换器
+- `addCustomConverter()` - 用于添加自定义转换器（会添加到默认转换器之前）
+- `configureMessageConverters()` - 用于配置所有已选择的消息转换器
+
+### 2.2 Spring MVC 6.x 及以下版本
+
+对于 Spring MVC 6.x 及以下版本，继续使用原有的配置方式：
+
+```java
+@Configuration
+public class FastJsonWebMvcConfiguration extends WebMvcConfigurationSupport {
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
@@ -92,7 +128,7 @@ public class WebMvcConfigurer extends WebMvcConfigurationSupport {
         FastJsonConfig config = new FastJsonConfig();
         config.setDateFormat("yyyy-MM-dd HH:mm:ss");
         config.setCharset(StandardCharsets.UTF_8);
-        
+
         converter.setFastJsonConfig(config);
         // 从2.0.61版本开始，FastJsonHttpMessageConverter默认charset已经是UTF-8，无需手动设置
         // converter.setDefaultCharset(StandardCharsets.UTF_8);
